@@ -5,7 +5,10 @@ import { SkillsSection } from "@/components/sections/skills-section";
 export const metadata: Metadata = {
   title: "Skills",
   description:
-    "Explore the programming languages, frontend technologies, backend tools, databases and development tools used by Priyanshu Jaggi.",
+    "Explore Priyanshu Jaggi's technical skills in Java, JavaScript, TypeScript, React, Next.js, Node.js, MongoDB and full-stack development.",
+  alternates: {
+    canonical: "/skills",
+  },
 };
 
 export default function SkillsPage() {

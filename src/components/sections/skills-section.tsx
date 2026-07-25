@@ -30,7 +30,7 @@ import {
   SiPostman,
   SiTailwindcss,
   SiTypescript,
-  SiVisualstudiocode,
+
 } from "react-icons/si";
 
 import { VscVscode } from "react-icons/vsc";

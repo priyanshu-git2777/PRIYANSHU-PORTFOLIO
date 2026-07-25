@@ -180,3 +180,59 @@
     padding-block: clamp(5rem, 10vw, 8rem);
   }
 }
+@keyframes ai-chat-floating {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.ai-chat-float {
+  animation: ai-chat-floating 3s ease-in-out infinite;
+}
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+::selection {
+  background: color-mix(
+    in srgb,
+    var(--primary) 35%,
+    transparent
+  );
+}
+
+@media (pointer: fine) and (hover: hover) {
+  body,
+  a,
+  button,
+  input,
+  textarea,
+  select,
+  [role="button"] {
+    cursor: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -5,7 +5,10 @@ import { ContactSection } from "@/components/sections/contact-section";
 export const metadata: Metadata = {
   title: "Contact",
   description:
-    "Contact Priyanshu Jaggi regarding software-development opportunities, projects and collaborations.",
+    "Contact Priyanshu Jaggi regarding software-development opportunities, internships, projects and professional collaboration.",
+  alternates: {
+    canonical: "/contact",
+  },
 };
 
 export default function ContactPage() {
