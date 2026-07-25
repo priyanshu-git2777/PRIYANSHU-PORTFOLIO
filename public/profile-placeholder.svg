@@ -1,0 +1,86 @@
+<svg width="900" height="1100" viewBox="0 0 900 1100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="900" height="1100" rx="80" fill="#09090F"/>
+
+  <circle cx="120" cy="120" r="290" fill="#7C3AED" fill-opacity="0.25"/>
+  <circle cx="790" cy="240" r="270" fill="#06B6D4" fill-opacity="0.18"/>
+  <circle cx="470" cy="1050" r="330" fill="#2563EB" fill-opacity="0.18"/>
+
+  <rect
+    x="50"
+    y="50"
+    width="800"
+    height="1000"
+    rx="62"
+    fill="white"
+    fill-opacity="0.04"
+    stroke="white"
+    stroke-opacity="0.12"
+    stroke-width="2"
+  />
+
+  <circle
+    cx="450"
+    cy="430"
+    r="190"
+    fill="url(#faceGradient)"
+  />
+
+  <path
+    d="M210 970C225 750 310 650 450 650C590 650 675 750 690 970H210Z"
+    fill="url(#bodyGradient)"
+  />
+
+  <text
+    x="450"
+    y="450"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    fill="white"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="126"
+    font-weight="700"
+  >
+    PJ
+  </text>
+
+  <text
+    x="450"
+    y="1010"
+    text-anchor="middle"
+    fill="white"
+    fill-opacity="0.65"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="30"
+    letter-spacing="6"
+  >
+    DEVELOPER
+  </text>
+
+  <defs>
+    <linearGradient
+      id="faceGradient"
+      x1="260"
+      y1="240"
+      x2="640"
+      y2="620"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop stop-color="#8B5CF6"/>
+      <stop offset="0.5" stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+
+    <linearGradient
+      id="bodyGradient"
+      x1="210"
+      y1="650"
+      x2="690"
+      y2="970"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop stop-color="#7C3AED" stop-opacity="0.9"/>
+      <stop offset="0.5" stop-color="#2563EB" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#0891B2" stop-opacity="0.9"/>
+    </linearGradient>
+  </defs>
+</svg>
