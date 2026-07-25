@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import {
   Activity,
   AlertCircle,
@@ -617,11 +618,13 @@ function GitHubDashboard({
       >
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-5">
-            <img
-              src={data.profile.avatarUrl}
-              alt={`${data.profile.username} GitHub avatar`}
-              className="size-16 rounded-2xl border border-white/10 object-cover sm:size-20"
-            />
+           <Image
+  src={data.profile.avatarUrl}
+  alt={`${data.profile.username} GitHub avatar`}
+  width={80}
+  height={80}
+  className="size-16 rounded-2xl border border-white/10 object-cover sm:size-20"
+/>
 
             <div>
               <p className="font-display text-2xl font-bold">
