@@ -1,5 +1,6 @@
 "use client";
 
+
 import type { MouseEvent, ReactNode } from "react";
 import Image from "next/image";
 import {
@@ -286,32 +287,42 @@ function TiltProfileCard() {
       }}
       className="relative mx-auto max-w-md cursor-pointer"
     >
-      <div className="absolute -inset-5 rounded-[2.5rem] bg-signature-gradient opacity-20 blur-3xl" />
-
+      <motion.div
+  animate={{
+    opacity: [0.25, 0.5, 0.25],
+    scale: [1, 1.04, 1],
+  }}
+  transition={{
+    duration: 4,
+    repeat: Infinity,
+    ease: "easeInOut",
+  }}
+  className="absolute -inset-6 rounded-[2.5rem] bg-signature-gradient blur-3xl"
+/>
       <div className="surface-card relative overflow-hidden rounded-[2.5rem] p-3">
-        <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem]">
-          <Image
-            src="/profile-placeholder.svg"
-            alt="Priyanshu Jaggi profile placeholder"
-            fill
-            priority
-            sizes="(max-width: 1024px) 90vw, 420px"
-            className="object-cover"
-          />
+  <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] border border-cyan-400/20">
+    <Image
+      src="/profile.png"
+      alt="Priyanshu Jaggi"
+      fill
+      priority
+      sizes="(max-width: 1024px) 90vw, 420px"
+      className="object-cover object-top transition-transform duration-700 hover:scale-105"
+    />
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
-          <div className="absolute inset-x-0 bottom-0 p-6">
-            <p className="font-display text-2xl font-bold text-white">
-              Priyanshu Jaggi
-            </p>
+    <div className="absolute inset-x-0 bottom-0 p-6">
+      <p className="font-display text-2xl font-bold text-white">
+        Priyanshu Jaggi
+      </p>
 
-            <p className="mt-1 text-sm text-white/70">
-              Computer Science Student
-            </p>
-          </div>
-        </div>
-      </div>
+      <p className="mt-1 text-sm text-white/70">
+        Full Stack Developer
+      </p>
+    </div>
+  </div>
+</div>
 
       <motion.div
         animate={{

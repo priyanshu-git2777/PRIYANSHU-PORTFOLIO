@@ -27,8 +27,10 @@ export default function HomePage() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
-            The design system and project structure are ready.
-            The animated hero section will be created in Part 2.
+           Dream Big. Build Bigger.
+  <br />
+  Every line of code brings me one step closer
+  to becoming a world-class Software Engineer.
           </p>
 
           <Link

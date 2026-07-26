@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -8,7 +9,18 @@ import {
   Mail,
   Sparkles,
 } from "lucide-react";
-import { FaGithub, FaLinkedinIn } from "react-icons/fa";
+import {
+  FaGithub,
+  FaJava,
+  FaLinkedinIn,
+} from "react-icons/fa";
+
+import {
+  SiMongodb,
+  SiNextdotjs,
+  SiNodedotjs,
+  SiReact,
+} from "react-icons/si";
 import { AnimatePresence, motion } from "motion/react";
 
 import { PageContainer } from "@/components/layout/page-container";
@@ -195,17 +207,17 @@ export function HeroSection() {
           </div>
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.88, rotate: -4 }}
-            animate={{ opacity: 1, scale: 1, rotate: 0 }}
-            transition={{
-              duration: 0.8,
-              delay: 0.35,
-              ease: "easeOut",
-            }}
-            className="relative mx-auto hidden w-full max-w-md lg:block"
-          >
-            <DeveloperCard />
-          </motion.div>
+  initial={{ opacity: 0, scale: 0.88, rotate: -4 }}
+  animate={{ opacity: 1, scale: 1, rotate: 0 }}
+  transition={{
+    duration: 0.8,
+    delay: 0.35,
+    ease: "easeOut",
+  }}
+  className="relative mx-auto hidden w-full max-w-md lg:block"
+>
+  <InteractiveProfile />
+</motion.div>
         </div>
       </PageContainer>
 
@@ -289,6 +301,213 @@ function AnimatedBackground() {
 
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background to-transparent" />
     </div>
+  );
+}
+
+function InteractiveProfile() {
+  return (
+    <motion.div
+      whileHover={{
+        scale: 1.03,
+        rotateY: 3,
+        rotateX: -2,
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 180,
+        damping: 18,
+      }}
+      className="relative mx-auto h-[470px] w-full max-w-[390px]"
+      style={{
+        transformStyle: "preserve-3d",
+        perspective: 1000,
+      }}
+    >
+      {/* Large animated glow */}
+      <motion.div
+        animate={{
+          rotate: 360,
+          scale: [1, 1.05, 1],
+        }}
+        transition={{
+          rotate: {
+            duration: 16,
+            repeat: Infinity,
+            ease: "linear",
+          },
+          scale: {
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut",
+          },
+        }}
+        className="absolute -inset-6 rounded-[3rem] bg-gradient-to-r from-violet-600 via-blue-500 to-cyan-400 opacity-40 blur-3xl"
+      />
+
+      {/* Rotating border */}
+      <motion.div
+        animate={{
+          rotate: 360,
+        }}
+        transition={{
+          duration: 12,
+          repeat: Infinity,
+          ease: "linear",
+        }}
+        className="absolute -inset-2 rounded-[2.7rem] bg-gradient-to-r from-violet-500 via-cyan-400 to-blue-500 p-[2px]"
+      >
+        <div className="h-full w-full rounded-[2.6rem] bg-background" />
+      </motion.div>
+
+      {/* Main image card */}
+      <div className="surface-card relative h-full overflow-hidden rounded-[2.5rem] border border-white/10">
+        <Image
+          src="/profile.png"
+          alt="Priyanshu Jaggi"
+          fill
+          priority
+          sizes="390px"
+          className="object-cover object-top transition-transform duration-700 hover:scale-105"
+        />
+
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
+
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            delay: 0.9,
+            duration: 0.6,
+          }}
+          className="absolute inset-x-0 bottom-0 p-7"
+        >
+          <p className="font-display text-2xl font-bold text-white">
+            Priyanshu Jaggi
+          </p>
+
+          <p className="mt-1 text-sm text-white/70">
+            Full Stack Developer
+          </p>
+
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-black/40 px-3 py-2 backdrop-blur-xl">
+            <motion.span
+              animate={{
+                opacity: [0.4, 1, 0.4],
+                scale: [0.8, 1.15, 0.8],
+              }}
+              transition={{
+                duration: 1.8,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="size-2 rounded-full bg-emerald-400"
+            />
+
+            <span className="text-xs text-emerald-300">
+              Available for opportunities
+            </span>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* React icon */}
+      <motion.div
+        animate={{
+          y: [0, -14, 0],
+          rotate: [0, 8, 0],
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        whileHover={{
+          scale: 1.2,
+          rotate: 20,
+        }}
+        className="absolute -left-10 top-12 z-20 flex size-16 items-center justify-center rounded-2xl border border-cyan-400/20 bg-slate-950/70 text-cyan-300 shadow-xl backdrop-blur-xl"
+      >
+        <SiReact className="size-8" />
+      </motion.div>
+
+      {/* Next.js icon */}
+      <motion.div
+        animate={{
+          y: [0, 13, 0],
+          rotate: [0, -8, 0],
+        }}
+        transition={{
+          duration: 3.6,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        whileHover={{
+          scale: 1.2,
+          rotate: -20,
+        }}
+        className="absolute -right-9 top-24 z-20 flex size-16 items-center justify-center rounded-2xl border border-white/15 bg-slate-950/70 text-white shadow-xl backdrop-blur-xl"
+      >
+        <SiNextdotjs className="size-8" />
+      </motion.div>
+
+      {/* Java icon */}
+      <motion.div
+        animate={{
+          x: [0, 12, 0],
+          y: [0, -5, 0],
+        }}
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        whileHover={{
+          scale: 1.2,
+          rotate: 10,
+        }}
+        className="absolute -left-8 bottom-24 z-20 flex size-16 items-center justify-center rounded-2xl border border-orange-400/20 bg-slate-950/70 text-orange-300 shadow-xl backdrop-blur-xl"
+      >
+        <FaJava className="size-8" />
+      </motion.div>
+
+      {/* MongoDB icon */}
+      <motion.div
+        animate={{
+          x: [0, -12, 0],
+          y: [0, 7, 0],
+        }}
+        transition={{
+          duration: 4.4,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        whileHover={{
+          scale: 1.2,
+          rotate: -10,
+        }}
+        className="absolute -right-8 bottom-16 z-20 flex size-16 items-center justify-center rounded-2xl border border-emerald-400/20 bg-slate-950/70 text-emerald-300 shadow-xl backdrop-blur-xl"
+      >
+        <SiMongodb className="size-8" />
+      </motion.div>
+
+      {/* Node.js small icon */}
+      <motion.div
+        animate={{
+          y: [0, -9, 0],
+        }}
+        transition={{
+          duration: 3.8,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        whileHover={{
+          scale: 1.2,
+        }}
+        className="absolute left-1/2 top-[-28px] z-20 flex size-14 -translate-x-1/2 items-center justify-center rounded-2xl border border-green-400/20 bg-slate-950/70 text-green-300 shadow-xl backdrop-blur-xl"
+      >
+        <SiNodedotjs className="size-7" />
+      </motion.div>
+    </motion.div>
   );
 }
 
