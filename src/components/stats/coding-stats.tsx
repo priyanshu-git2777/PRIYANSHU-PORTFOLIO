@@ -13,7 +13,6 @@ import {
   CircleDot,
   Code2,
   ExternalLink,
-  Flame,
   GitBranch as Github,
   GitFork,
   LoaderCircle,
@@ -23,6 +22,41 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+
+type LeetCodeData = {
+  success: true
+  profile: {
+    username: string
+    realName: string
+    avatarUrl: string
+    profileUrl: string
+    ranking: number
+    reputation: number
+  }
+  stats: {
+    totalSolved: number
+    totalSubmissions: number
+    acceptanceRate: number
+    easy: {
+      solved: number
+      submissions: number
+    }
+    medium: {
+      solved: number
+      submissions: number
+    }
+    hard: {
+      solved: number
+      submissions: number
+    }
+  }
+  generatedAt: string
+}
+
+type LeetCodeErrorResponse = {
+  success: false
+  message: string
+}
 
 type StatsTab = "github" | "leetcode";
 
@@ -108,34 +142,17 @@ type StatItem = {
   icon: LucideIcon;
 };
 
-const leetcodePreviewStats: StatItem[] = [
-  {
-    label: "Problems Solved",
-    value: "Coming soon",
-    description: "All difficulties",
-    icon: CheckCircle2,
-  },
-  {
-    label: "Easy Solved",
-    value: "Coming soon",
-    description: "Foundational problems",
-    icon: Code2,
-  },
-  {
-    label: "Medium Solved",
-    value: "Coming soon",
-    description: "Intermediate problems",
-    icon: Flame,
-  },
-  {
-    label: "Contest Rating",
-    value: "Coming soon",
-    description: "Competitive progress",
-    icon: Trophy,
-  },
-];
 
 export function CodingStats() {
+
+    const [leetcodeData, setLeetcodeData] =
+  useState<LeetCodeData | null>(null)
+
+const [isLoadingLeetcode, setIsLoadingLeetcode] =
+  useState(true)
+
+const [leetcodeError, setLeetcodeError] =
+  useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<StatsTab>("github");
   const [githubData, setGithubData] =
     useState<GithubApiResponse | null>(null);
@@ -181,12 +198,58 @@ export function CodingStats() {
       }
     }
 
+    async function fetchLeetCodeData() {
+      try {
+        setIsLoadingLeetcode(true);
+        setLeetcodeError(null);
+
+        const response = await fetch("/api/leetcode", {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        const result = (await response.json()) as
+          | LeetCodeData
+          | LeetCodeErrorResponse;
+
+        if (!response.ok || !result.success) {
+          throw new Error(
+            "message" in result
+              ? result.message
+              : "LeetCode data could not be loaded."
+          );
+        }
+
+        setLeetcodeData(result);
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+
+        console.error("LeetCode fetch error:", error);
+
+        setLeetcodeError(
+          error instanceof Error
+            ? error.message
+            : "LeetCode data could not be loaded."
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingLeetcode(false);
+        }
+      }
+    }
+
     void loadGithubData();
+    void fetchLeetCodeData();
 
     return () => {
       controller.abort();
     };
   }, []);
+
+  
 
   function handleDragEnd(
     _: MouseEvent | TouchEvent | PointerEvent,
@@ -236,7 +299,12 @@ export function CodingStats() {
               error={githubError}
             />
           ) : (
-            <LeetCodeDashboard key="leetcode" />
+            <LeetCodeDashboard
+              key="leetcode"
+              data={leetcodeData}
+              isLoading={isLoadingLeetcode}
+              error={leetcodeError}
+            />
           )}
         </AnimatePresence>
       </motion.div>
@@ -1169,7 +1237,109 @@ function formatRelativeDate(dateString: string) {
   });
 }
 
-function LeetCodeDashboard() {
+type LeetCodeDashboardProps = {
+  data: LeetCodeData | null;
+  isLoading: boolean;
+  error: string | null;
+};
+
+function LeetCodeDashboard({
+  data,
+  isLoading,
+  error,
+}: LeetCodeDashboardProps) {
+  if (isLoading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="rounded-3xl border border-lime-400/15 bg-slate-950/60 p-8 backdrop-blur-xl"
+      >
+        <div className="flex min-h-72 flex-col items-center justify-center text-center">
+          <div className="flex size-16 items-center justify-center rounded-2xl border border-lime-400/20 bg-lime-400/10 text-lime-300">
+            <LoaderCircle className="size-8 animate-spin" />
+          </div>
+
+          <h2 className="mt-6 text-2xl font-bold text-white">
+            Loading LeetCode activity
+          </h2>
+
+          <p className="mt-3 max-w-md text-sm leading-7 text-slate-400">
+            Retrieving your solved problems, ranking, submissions and
+            difficulty statistics.
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-3xl border border-red-400/20 bg-slate-950/60 p-8 backdrop-blur-xl"
+      >
+        <div className="mx-auto max-w-2xl text-center">
+          <div className="mx-auto flex size-16 items-center justify-center rounded-2xl border border-red-400/20 bg-red-400/10 text-red-300">
+            <Code2 className="size-8" />
+          </div>
+
+          <h2 className="mt-6 text-2xl font-bold text-white">
+            LeetCode data could not load
+          </h2>
+
+          <p className="mt-3 text-sm leading-7 text-red-200">
+            {error || "LeetCode information is currently unavailable."}
+          </p>
+
+          <p className="mt-4 text-sm leading-6 text-slate-500">
+            Check LEETCODE_USERNAME in .env.local, restart the Next.js
+            development server, and refresh this page.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-6 rounded-xl border border-red-400/20 bg-red-400/10 px-5 py-3 text-sm font-semibold text-red-200 transition hover:bg-red-400/20"
+          >
+            Try again
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  const difficultyStats = [
+    {
+      label: "Easy",
+      solved: data.stats.easy.solved,
+      submissions: data.stats.easy.submissions,
+      textClass: "text-emerald-300",
+      borderClass: "border-emerald-400/20",
+      backgroundClass: "bg-emerald-400/5",
+      progressClass: "bg-emerald-400",
+    },
+    {
+      label: "Medium",
+      solved: data.stats.medium.solved,
+      submissions: data.stats.medium.submissions,
+      textClass: "text-amber-300",
+      borderClass: "border-amber-400/20",
+      backgroundClass: "bg-amber-400/5",
+      progressClass: "bg-amber-400",
+    },
+    {
+      label: "Hard",
+      solved: data.stats.hard.solved,
+      submissions: data.stats.hard.submissions,
+      textClass: "text-red-300",
+      borderClass: "border-red-400/20",
+      backgroundClass: "bg-red-400/5",
+      progressClass: "bg-red-400",
+    },
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 35 }}
@@ -1178,64 +1348,347 @@ function LeetCodeDashboard() {
       transition={{ duration: 0.3 }}
       className="space-y-8"
     >
-      <div className="rounded-3xl border border-lime-400/15 bg-slate-950/60 p-6 backdrop-blur-xl sm:p-8">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-lime-400/10 text-lime-300">
-              <Code2 className="size-7" />
-            </div>
+      <div className="overflow-hidden rounded-3xl border border-lime-400/15 bg-slate-950/60 backdrop-blur-xl">
+        <div className="flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+            {data.profile.avatarUrl ? (
+              <img
+                src={data.profile.avatarUrl}
+                alt={`${data.profile.realName}'s LeetCode profile`}
+                className="size-24 rounded-3xl border border-lime-400/30 object-cover"
+              />
+            ) : (
+              <div className="flex size-24 items-center justify-center rounded-3xl border border-lime-400/30 bg-lime-400/10 text-lime-300">
+                <Code2 className="size-10" />
+              </div>
+            )}
 
             <div>
-              <p className="text-sm font-medium text-lime-300">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-lime-300">
                 LeetCode activity
               </p>
 
-              <h2 className="text-2xl font-bold text-white">
-                Problem-solving progress
+              <h2 className="mt-2 text-2xl font-bold text-white sm:text-3xl">
+                {data.profile.realName || data.profile.username}
               </h2>
+
+              <a
+                href={data.profile.profileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-1 inline-block text-sm font-medium text-lime-300 transition hover:text-lime-200"
+              >
+                @{data.profile.username}
+              </a>
+
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-400">
+                Live problem-solving statistics loaded from your public
+                LeetCode profile.
+              </p>
             </div>
           </div>
 
-          <span className="w-fit rounded-full border border-lime-400/20 bg-lime-400/10 px-4 py-2 text-xs font-semibold text-lime-200">
-            Complete dashboard in Part 11D
-          </span>
+          <a
+            href={data.profile.profileUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex w-fit items-center justify-center gap-2 rounded-xl border border-lime-400/30 bg-lime-400/10 px-5 py-3 text-sm font-semibold text-lime-200 transition hover:bg-lime-400/20"
+          >
+            View LeetCode profile
+            <ExternalLink className="size-4" />
+          </a>
         </div>
-
-        <p className="mt-5 max-w-3xl text-sm leading-7 text-slate-400">
-          The next design part will add solved questions,
-          difficulty progress, contest statistics, topic
-          performance, streaks and a LeetCode submission calendar.
-        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {leetcodePreviewStats.map((stat) => {
-          const Icon = stat.icon;
+        <LeetCodeStatCard
+          label="Problems Solved"
+          value={data.stats.totalSolved.toLocaleString("en-GB")}
+          description="Accepted problems"
+          icon={CheckCircle2}
+        />
+
+        <LeetCodeStatCard
+          label="World Ranking"
+          value={
+            data.profile.ranking
+              ? `#${data.profile.ranking.toLocaleString("en-GB")}`
+              : "N/A"
+          }
+          description="Global LeetCode position"
+          icon={Trophy}
+        />
+
+        <LeetCodeStatCard
+          label="Acceptance Rate"
+          value={`${data.stats.acceptanceRate}%`}
+          description="Accepted versus submitted"
+          icon={Activity}
+        />
+
+        <LeetCodeStatCard
+          label="Submissions"
+          value={data.stats.totalSubmissions.toLocaleString("en-GB")}
+          description="Total submission attempts"
+          icon={Code2}
+        />
+      </div>
+
+      <div className="grid gap-5 md:grid-cols-3">
+        {difficultyStats.map((item, index) => {
+          const percentage =
+            item.submissions > 0
+              ? Math.min((item.solved / item.submissions) * 100, 100)
+              : 0;
 
           return (
-            <div
-              key={stat.label}
-              className="rounded-2xl border border-white/10 bg-slate-950/60 p-5 backdrop-blur-xl"
+            <motion.article
+              key={item.label}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.08 }}
+              className={`rounded-3xl border p-6 ${item.borderClass} ${item.backgroundClass}`}
             >
-              <div className="flex size-11 items-center justify-center rounded-xl border border-lime-400/15 bg-lime-400/5 text-lime-300">
-                <Icon className="size-5" />
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className={`text-sm font-semibold ${item.textClass}`}>
+                    {item.label}
+                  </p>
+
+                  <p className="mt-2 text-4xl font-bold text-white">
+                    {item.solved.toLocaleString("en-GB")}
+                  </p>
+
+                  <p className="mt-2 text-sm text-slate-500">
+                    Problems solved
+                  </p>
+                </div>
+
+                <div
+                  className={`flex size-12 items-center justify-center rounded-2xl border ${item.borderClass} ${item.backgroundClass} ${item.textClass}`}
+                >
+                  <Code2 className="size-6" />
+                </div>
               </div>
 
-              <p className="mt-5 text-2xl font-bold text-white">
-                {stat.value}
-              </p>
+              <div className="mt-6 h-2.5 overflow-hidden rounded-full bg-slate-800">
+                <motion.div
+                  initial={{ width: 0 }}
+                  whileInView={{ width: `${percentage}%` }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, delay: index * 0.08 }}
+                  className={`h-full rounded-full ${item.progressClass}`}
+                />
+              </div>
 
-              <p className="mt-2 text-sm font-semibold text-slate-200">
-                {stat.label}
-              </p>
+              <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                <span>
+                  {item.solved.toLocaleString("en-GB")} solved
+                </span>
 
-              <p className="mt-1 text-xs text-slate-500">
-                {stat.description}
-              </p>
-            </div>
+                <span>
+                  {item.submissions.toLocaleString("en-GB")} submissions
+                </span>
+              </div>
+            </motion.article>
           );
         })}
       </div>
+
+      <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+        <section className="rounded-3xl border border-white/10 bg-slate-950/60 p-6 backdrop-blur-xl sm:p-8">
+          <p className="text-sm font-medium text-lime-300">
+            Difficulty distribution
+          </p>
+
+          <h3 className="mt-1 text-2xl font-bold text-white">
+            Solved problems breakdown
+          </h3>
+
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            Your accepted questions grouped by LeetCode difficulty.
+          </p>
+
+          <div className="mt-8 space-y-5">
+            <DifficultyBar
+              label="Easy"
+              solved={data.stats.easy.solved}
+              totalSolved={data.stats.totalSolved}
+              barClassName="bg-emerald-400"
+              textClassName="text-emerald-300"
+            />
+
+            <DifficultyBar
+              label="Medium"
+              solved={data.stats.medium.solved}
+              totalSolved={data.stats.totalSolved}
+              barClassName="bg-amber-400"
+              textClassName="text-amber-300"
+            />
+
+            <DifficultyBar
+              label="Hard"
+              solved={data.stats.hard.solved}
+              totalSolved={data.stats.totalSolved}
+              barClassName="bg-red-400"
+              textClassName="text-red-300"
+            />
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-slate-950/60 p-6 backdrop-blur-xl sm:p-8">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-lime-300">
+                Profile details
+              </p>
+
+              <h3 className="mt-1 text-2xl font-bold text-white">
+                Coding overview
+              </h3>
+            </div>
+
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-lime-400/10 text-lime-300">
+              <Medal className="size-6" />
+            </div>
+          </div>
+
+          <div className="mt-7 space-y-3">
+            <LeetCodeDetailRow
+              label="Username"
+              value={data.profile.username}
+            />
+
+            <LeetCodeDetailRow
+              label="Ranking"
+              value={
+                data.profile.ranking
+                  ? `#${data.profile.ranking.toLocaleString("en-GB")}`
+                  : "Not available"
+              }
+            />
+
+            <LeetCodeDetailRow
+              label="Reputation"
+              value={data.profile.reputation.toLocaleString("en-GB")}
+            />
+
+            <LeetCodeDetailRow
+              label="Acceptance rate"
+              value={`${data.stats.acceptanceRate}%`}
+            />
+          </div>
+        </section>
+      </div>
     </motion.div>
+  );
+}
+
+type LeetCodeStatCardProps = {
+  label: string;
+  value: string;
+  description: string;
+  icon: LucideIcon;
+};
+
+function LeetCodeStatCard({
+  label,
+  value,
+  description,
+  icon: Icon,
+}: LeetCodeStatCardProps) {
+  return (
+    <motion.article
+      whileHover={{ y: -5 }}
+      className="rounded-2xl border border-white/10 bg-slate-950/60 p-5 backdrop-blur-xl"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex size-11 items-center justify-center rounded-xl border border-lime-400/15 bg-lime-400/5 text-lime-300">
+          <Icon className="size-5" />
+        </div>
+
+        <span className="rounded-full border border-lime-400/15 bg-lime-400/5 px-3 py-1 text-xs text-lime-300">
+          Live
+        </span>
+      </div>
+
+      <p className="mt-5 text-3xl font-bold text-white">
+        {value}
+      </p>
+
+      <p className="mt-2 font-semibold text-slate-200">
+        {label}
+      </p>
+
+      <p className="mt-1 text-sm text-slate-500">
+        {description}
+      </p>
+    </motion.article>
+  );
+}
+
+type DifficultyBarProps = {
+  label: string;
+  solved: number;
+  totalSolved: number;
+  barClassName: string;
+  textClassName: string;
+};
+
+function DifficultyBar({
+  label,
+  solved,
+  totalSolved,
+  barClassName,
+  textClassName,
+}: DifficultyBarProps) {
+  const percentage =
+    totalSolved > 0 ? Math.round((solved / totalSolved) * 100) : 0;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-4">
+        <span className={`text-sm font-semibold ${textClassName}`}>
+          {label}
+        </span>
+
+        <span className="text-sm text-slate-400">
+          {solved.toLocaleString("en-GB")} ({percentage}%)
+        </span>
+      </div>
+
+      <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-800">
+        <motion.div
+          initial={{ width: 0 }}
+          whileInView={{ width: `${percentage}%` }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className={`h-full rounded-full ${barClassName}`}
+        />
+      </div>
+    </div>
+  );
+}
+
+type LeetCodeDetailRowProps = {
+  label: string;
+  value: string;
+};
+
+function LeetCodeDetailRow({
+  label,
+  value,
+}: LeetCodeDetailRowProps) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-slate-900/40 p-4">
+      <span className="text-sm text-slate-500">
+        {label}
+      </span>
+
+      <span className="break-all text-right text-sm font-semibold text-slate-200">
+        {value}
+      </span>
+    </div>
   );
 }
