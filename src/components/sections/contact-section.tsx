@@ -75,7 +75,7 @@ const socialLinks = [
   {
     label: "LinkedIn",
     description: "Connect professionally",
-    href: "https://www.linkedin.com/in/priyanshu-jaggi-8b71a4423/",
+    href: "https://www.linkedin.com/in/priyanshu-jaggi-8b71a4423/?skipRedirect=true",
     icon: FaLinkedinIn,
   },
   {
@@ -179,7 +179,7 @@ function ContactInformation() {
   const [hasCopiedEmail, setHasCopiedEmail] =
     useState(false);
 
-  const emailAddress = "your-email@example.com";
+  const emailAddress = "priyanshujaggi188@example.com";
 
   async function copyEmailAddress() {
     try {
