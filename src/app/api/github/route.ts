@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 
-const GITHUB_USERNAME = "priyanshu-git2777";
-
 const GITHUB_API_URL = "https://api.github.com";
 
 type GitHubUser = {
@@ -10,44 +8,63 @@ type GitHubUser = {
   avatar_url: string;
   html_url: string;
   bio: string | null;
+  location: string | null;
+  company: string | null;
+  blog: string;
   public_repos: number;
   followers: number;
   following: number;
+  created_at: string;
+  updated_at: string;
 };
 
 type GitHubRepository = {
   id: number;
   name: string;
-  html_url: string;
+  full_name: string;
   description: string | null;
-  stargazers_count: number;
-  fork: boolean;
+  html_url: string;
+  homepage: string | null;
   language: string | null;
+  stargazers_count: number;
+  forks_count: number;
+  open_issues_count: number;
+  fork: boolean;
+  archived: boolean;
+  topics?: string[];
+  created_at: string;
   updated_at: string;
+  pushed_at: string;
 };
 
 type GitHubEvent = {
   id: string;
   type: string;
   created_at: string;
+
   repo: {
     name: string;
   };
-};
 
-type ActivityDay = {
-  date: string;
-  count: number;
+  payload?: {
+    action?: string;
+    ref?: string;
+
+    commits?: Array<{
+      sha: string;
+      message: string;
+    }>;
+  };
 };
 
 function getGitHubHeaders(): HeadersInit {
-  const headers: HeadersInit = {
-    Accept: "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-    "User-Agent": "priyanshu-portfolio",
-  };
+  const token = process.env.GITHUB_TOKEN?.trim();
 
-  const token = process.env.GITHUB_TOKEN;
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "Priyanshu-Portfolio",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -56,211 +73,273 @@ function getGitHubHeaders(): HeadersInit {
   return headers;
 }
 
-async function fetchGitHubData<T>(
+async function fetchGitHub<T>(
   endpoint: string
-): Promise<T> {
+): Promise<{
+  data: T;
+  remainingRequests: string | null;
+}> {
   const response = await fetch(
     `${GITHUB_API_URL}${endpoint}`,
     {
       headers: getGitHubHeaders(),
       next: {
-        revalidate: 3600,
+        revalidate: 900,
       },
     }
+  );
+
+  const remainingRequests = response.headers.get(
+    "x-ratelimit-remaining"
   );
 
   if (!response.ok) {
-    throw new Error(
-      `GitHub request failed with status ${response.status}`
-    );
-  }
+    let errorMessage = "GitHub request failed.";
 
-  return response.json() as Promise<T>;
-}
+    try {
+      const errorData = (await response.json()) as {
+        message?: string;
+      };
 
-function formatEventType(eventType: string): string {
-  const eventNames: Record<string, string> = {
-    CreateEvent: "Created something",
-    DeleteEvent: "Deleted a Git reference",
-    ForkEvent: "Forked a repository",
-    IssuesEvent: "Updated an issue",
-    IssueCommentEvent: "Commented on an issue",
-    PullRequestEvent: "Updated a pull request",
-    PullRequestReviewEvent: "Reviewed a pull request",
-    PushEvent: "Pushed code",
-    ReleaseEvent: "Published a release",
-    WatchEvent: "Starred a repository",
-  };
-
-  return eventNames[eventType] ?? "GitHub activity";
-}
-
-function calculateActivityByDay(
-  events: GitHubEvent[]
-): ActivityDay[] {
-  const activityMap = new Map<string, number>();
-
-  for (const event of events) {
-    const date = event.created_at.slice(0, 10);
-    const currentCount = activityMap.get(date) ?? 0;
-
-    activityMap.set(date, currentCount + 1);
-  }
-
-  return Array.from(activityMap.entries())
-    .map(([date, count]) => ({
-      date,
-      count,
-    }))
-    .sort((first, second) =>
-      first.date.localeCompare(second.date)
-    );
-}
-
-function calculateCurrentActivityStreak(
-  activityDays: ActivityDay[]
-): number {
-  if (activityDays.length === 0) {
-    return 0;
-  }
-
-  const activityDates = new Set(
-    activityDays.map((day) => day.date)
-  );
-
-  const latestDate = new Date(
-    `${activityDays[activityDays.length - 1].date}T00:00:00Z`
-  );
-
-  let streak = 0;
-  const currentDate = new Date(latestDate);
-
-  while (true) {
-    const dateKey = currentDate
-      .toISOString()
-      .slice(0, 10);
-
-    if (!activityDates.has(dateKey)) {
-      break;
+      if (errorData.message) {
+        errorMessage = errorData.message;
+      }
+    } catch {
+      // GitHub did not return JSON.
     }
 
-    streak += 1;
-    currentDate.setUTCDate(currentDate.getUTCDate() - 1);
+    throw new Error(
+      `GitHub API returned ${response.status}: ${errorMessage}`
+    );
   }
 
-  return streak;
+  const data = (await response.json()) as T;
+
+  return {
+    data,
+    remainingRequests,
+  };
+}
+
+function calculateLanguages(
+  repositories: GitHubRepository[]
+) {
+  const languageCounts = new Map<string, number>();
+
+  for (const repository of repositories) {
+    if (
+      repository.fork ||
+      repository.archived ||
+      !repository.language
+    ) {
+      continue;
+    }
+
+    const previousCount =
+      languageCounts.get(repository.language) ?? 0;
+
+    languageCounts.set(
+      repository.language,
+      previousCount + 1
+    );
+  }
+
+  const total = Array.from(
+    languageCounts.values()
+  ).reduce((sum, value) => sum + value, 0);
+
+  if (total === 0) {
+    return [];
+  }
+
+  return Array.from(languageCounts.entries())
+    .map(([name, repositoryCount]) => ({
+      name,
+      repositoryCount,
+      percentage: Math.round(
+        (repositoryCount / total) * 100
+      ),
+    }))
+    .sort(
+      (first, second) =>
+        second.repositoryCount -
+        first.repositoryCount
+    )
+    .slice(0, 6);
 }
 
 export async function GET() {
-  if (!GITHUB_USERNAME) {
-    return NextResponse.json(
-      {
-        error:
-          "Add your GitHub username inside src/app/api/github/route.ts.",
-      },
-      {
-        status: 400,
-      }
-    );
-  }
-
-  
   try {
-    const user = await fetchGitHubData<GitHubUser>(
-      `/users/${GITHUB_USERNAME}`
-    );
+    const username =
+      process.env.GITHUB_USERNAME?.trim();
 
-    const repositories =
-      await fetchGitHubData<GitHubRepository[]>(
-        `/users/${GITHUB_USERNAME}/repos?per_page=100&sort=updated`
+    if (!username) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "GITHUB_USERNAME is missing from .env.local.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    const encodedUsername =
+      encodeURIComponent(username);
+
+    const [
+      profileResult,
+      repositoriesResult,
+      eventsResult,
+    ] = await Promise.all([
+      fetchGitHub<GitHubUser>(
+        `/users/${encodedUsername}`
+      ),
+
+      fetchGitHub<GitHubRepository[]>(
+        `/users/${encodedUsername}/repos?per_page=100&sort=updated&type=owner`
+      ),
+
+      fetchGitHub<GitHubEvent[]>(
+        `/users/${encodedUsername}/events/public?per_page=30`
+      ),
+    ]);
+
+    const originalRepositories =
+      repositoriesResult.data.filter(
+        (repository) => !repository.fork
       );
 
-    const events = await fetchGitHubData<GitHubEvent[]>(
-      `/users/${GITHUB_USERNAME}/events/public?per_page=100`
-    );
+    const activeRepositories =
+      originalRepositories.filter(
+        (repository) => !repository.archived
+      );
 
-    const originalRepositories = repositories.filter(
-      (repository) => !repository.fork
-    );
+    const totalStars =
+      activeRepositories.reduce(
+        (total, repository) =>
+          total + repository.stargazers_count,
+        0
+      );
 
-    const totalStars = originalRepositories.reduce(
-      (total, repository) =>
-        total + repository.stargazers_count,
-      0
-    );
+    const totalForks =
+      activeRepositories.reduce(
+        (total, repository) =>
+          total + repository.forks_count,
+        0
+      );
 
-    const activityByDay = calculateActivityByDay(events);
-
-    const mostActiveDay =
-      activityByDay.length > 0
-        ? activityByDay.reduce((bestDay, currentDay) =>
-            currentDay.count > bestDay.count
-              ? currentDay
-              : bestDay
-          )
-        : null;
-
-    const recentPushEvents = events.filter(
-      (event) => event.type === "PushEvent"
-    ).length;
-
-    const recentActivity = events.slice(0, 6).map((event) => ({
-      id: event.id,
-      type: formatEventType(event.type),
-      repository: event.repo.name,
-      createdAt: event.created_at,
-    }));
-
-    const popularRepositories = originalRepositories
-      .sort(
-        (first, second) =>
+    const featuredRepositories = [
+      ...activeRepositories,
+    ]
+      .sort((first, second) => {
+        const starsDifference =
           second.stargazers_count -
-          first.stargazers_count
-      )
-      .slice(0, 4)
+          first.stargazers_count;
+
+        if (starsDifference !== 0) {
+          return starsDifference;
+        }
+
+        return (
+          new Date(second.pushed_at).getTime() -
+          new Date(first.pushed_at).getTime()
+        );
+      })
+      .slice(0, 6)
       .map((repository) => ({
         id: repository.id,
         name: repository.name,
-        url: repository.html_url,
+        fullName: repository.full_name,
         description: repository.description,
+        url: repository.html_url,
+        homepage: repository.homepage,
+        language:
+          repository.language ?? "Other",
         stars: repository.stargazers_count,
-        language: repository.language,
+        forks: repository.forks_count,
+        openIssues:
+          repository.open_issues_count,
+        topics: repository.topics ?? [],
+        createdAt: repository.created_at,
         updatedAt: repository.updated_at,
+        pushedAt: repository.pushed_at,
+      }));
+
+    const recentEvents =
+      eventsResult.data.slice(0, 10).map((event) => ({
+        id: event.id,
+        type: event.type,
+        repository: event.repo.name,
+        createdAt: event.created_at,
+        action: event.payload?.action ?? null,
+        branch: event.payload?.ref ?? null,
+        commits:
+          event.payload?.commits?.length ?? 0,
+        commitMessage:
+          event.payload?.commits?.[0]?.message ??
+          null,
       }));
 
     return NextResponse.json({
+      success: true,
+
       profile: {
-        username: user.login,
-        name: user.name,
-        avatarUrl: user.avatar_url,
-        profileUrl: user.html_url,
-        bio: user.bio,
-        publicRepositories: user.public_repos,
-        followers: user.followers,
-        following: user.following,
+        username: profileResult.data.login,
+        name:
+          profileResult.data.name ??
+          profileResult.data.login,
+        avatarUrl: profileResult.data.avatar_url,
+        profileUrl: profileResult.data.html_url,
+        bio: profileResult.data.bio,
+        location: profileResult.data.location,
+        company: profileResult.data.company,
+        website: profileResult.data.blog,
+        publicRepositories:
+          profileResult.data.public_repos,
+        followers: profileResult.data.followers,
+        following: profileResult.data.following,
+        joinedAt: profileResult.data.created_at,
+        updatedAt: profileResult.data.updated_at,
       },
-      statistics: {
-        originalRepositories:
-          originalRepositories.length,
+
+      summary: {
+        repositoryCount:
+          activeRepositories.length,
         totalStars,
-        recentPublicEvents: events.length,
-        recentPushEvents,
-        recentActivityStreak:
-          calculateCurrentActivityStreak(activityByDay),
-        mostActiveDay,
+        totalForks,
+        recentPublicEvents:
+          eventsResult.data.length,
       },
-      activityByDay: activityByDay.slice(-14),
-      recentActivity,
-      popularRepositories,
-      generatedAt: new Date().toISOString(),
+
+      languages:
+        calculateLanguages(activeRepositories),
+
+      featuredRepositories,
+
+      recentEvents,
+
+      api: {
+        authenticated: Boolean(
+          process.env.GITHUB_TOKEN?.trim()
+        ),
+        remainingRequests:
+          profileResult.remainingRequests,
+        generatedAt: new Date().toISOString(),
+      },
     });
   } catch (error) {
-    console.error("GitHub API error:", error);
+    console.error("GitHub route error:", error);
 
     return NextResponse.json(
       {
+        success: false,
         error:
-          "GitHub statistics could not be loaded at the moment.",
+          error instanceof Error
+            ? error.message
+            : "Unable to retrieve GitHub information.",
       },
       {
         status: 500,

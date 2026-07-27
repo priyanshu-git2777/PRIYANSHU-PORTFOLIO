@@ -29,6 +29,7 @@ const navigationLinks = [
     label: "Projects",
     href: "/projects",
   },
+  
   {
     label: "Testimonials",
     href: "/testimonials",
@@ -37,6 +38,8 @@ const navigationLinks = [
     label: "Contact",
     href: "/contact",
   },
+
+  { label: "Activity", href: "/stats" },
 ];
 
 export function Navbar() {
