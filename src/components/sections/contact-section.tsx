@@ -47,8 +47,8 @@ const initialFormValues: ContactFormValues = {
 const contactDetails = [
   {
     label: "Email",
-    value: "priyanshujaggi188@example.com",
-    description: "Best for opportunities and detailed messages",
+    value: "priyanshujaggi188@gmail.com",
+    description: "priyanshujaggi188@gmail.com",
     icon: Mail,
   },
   {
@@ -68,13 +68,13 @@ const contactDetails = [
 const socialLinks = [
   {
     label: "GitHub",
-    description: "View my repositories",
+    description: "https://github.com/priyanshu-git2777",
     href: "https://github.com/priyanshu-git2777",
     icon: FaGithub,
   },
   {
     label: "LinkedIn",
-    description: "Connect professionally",
+    description: "https://www.linkedin.com/in/priyanshu-jaggi-8b71a4423/?skipRedirect=true",
     href: "https://www.linkedin.com/in/priyanshu-jaggi-8b71a4423/?skipRedirect=true",
     icon: FaLinkedinIn,
   },
@@ -82,7 +82,7 @@ const socialLinks = [
     label: "WhatsApp",
     description: "Continue the conversation",
    href:
-  "https://wa.me/916395303188?text=Hello%20Priyanshu%2C%20I%20visited%20your%20portfolio%20and%20would%20like%20to%20discuss%20an%20opportunity.",
+  "https://wa.me/916395303188?text=Hello%20Priyanshu%2C%20I%20visited%20@%20portfolio%20and%20would%20like%20to%20discuss%20an%20opportunity.",
     icon: FaWhatsapp,
   },
 ];
@@ -179,7 +179,7 @@ function ContactInformation() {
   const [hasCopiedEmail, setHasCopiedEmail] =
     useState(false);
 
-  const emailAddress = "priyanshujaggi188@example.com";
+  const emailAddress = "priyanshujaggi188@gmail.com";
 
   async function copyEmailAddress() {
     try {
