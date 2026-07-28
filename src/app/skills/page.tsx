@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import SkillGlobe from "@/components/sections/skill-globe";
 
 import { SkillsSection } from "@/components/sections/skills-section";
 
@@ -13,4 +14,5 @@ export const metadata: Metadata = {
 
 export default function SkillsPage() {
   return <SkillsSection />;
+  <SkillGlobe />
 }

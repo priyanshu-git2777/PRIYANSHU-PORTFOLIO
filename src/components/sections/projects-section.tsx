@@ -458,27 +458,32 @@ function GitHubStatistics() {
     null
   );
 
-  async function loadGitHubData() {
+  async function requestGitHubData() {
+    const response = await fetch("/api/github", {
+      cache: "no-store",
+    });
+
+    const result = (await response.json()) as
+      | Partial<GitHubData>
+      | { error: string };
+
+    if (!response.ok || "error" in result) {
+      throw new Error(
+        "error" in result
+          ? result.error
+          : "Unable to load GitHub statistics."
+      );
+    }
+
+    return normalizeGitHubData(result);
+  }
+
+  async function handleRetry() {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch("/api/github", {
-        cache: "no-store",
-      });
-
-      const result = (await response.json()) as
-        | GitHubData
-        | { error: string };
-
-      if (!response.ok || "error" in result) {
-        throw new Error(
-          "error" in result
-            ? result.error
-            : "Unable to load GitHub statistics."
-        );
-      }
-
+      const result = await requestGitHubData();
       setGitHubData(result);
     } catch (requestError) {
       const message =
@@ -487,13 +492,45 @@ function GitHubStatistics() {
           : "Unable to load GitHub statistics.";
 
       setError(message);
+      setGitHubData(null);
     } finally {
       setIsLoading(false);
     }
   }
 
   useEffect(() => {
-    void loadGitHubData();
+    let isCancelled = false;
+
+    async function fetchInitialGitHubData() {
+      try {
+        const result = await requestGitHubData();
+
+        if (!isCancelled) {
+          setGitHubData(result);
+          setError(null);
+        }
+      } catch (requestError) {
+        if (!isCancelled) {
+          const message =
+            requestError instanceof Error
+              ? requestError.message
+              : "Unable to load GitHub statistics.";
+
+          setError(message);
+          setGitHubData(null);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void fetchInitialGitHubData();
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   return (
@@ -510,7 +547,7 @@ function GitHubStatistics() {
         {!isLoading && error && (
           <GitHubErrorState
             message={error}
-            onRetry={loadGitHubData}
+            onRetry={handleRetry}
           />
         )}
 
@@ -579,22 +616,22 @@ function GitHubDashboard({
   const statistics = [
     {
       label: "Public repositories",
-      value: data.profile.publicRepositories,
+      value: data.profile?.publicRepositories ?? 0,
       icon: FaGitAlt,
     },
     {
       label: "Total public stars",
-      value: data.statistics.totalStars,
+      value: data?.statistics?.totalStars ?? 0,
       icon: Star,
     },
     {
       label: "Followers",
-      value: data.profile.followers,
+      value: data.profile?.followers ?? 0,
       icon: Users,
     },
     {
       label: "Recent public events",
-      value: data.statistics.recentPublicEvents,
+      value: data?.statistics?.recentPublicEvents ?? 0,
       icon: Activity,
     },
   ];
@@ -714,8 +751,14 @@ function ActivityGraph({
 }: {
   data: GitHubData;
 }) {
+  const activityByDay = Array.isArray(data.activityByDay)
+    ? data.activityByDay
+    : [];
+
+  const statistics = data.statistics;
+
   const maximumCount = Math.max(
-    ...data.activityByDay.map((day) => day.count),
+    ...activityByDay.map((day) => day.count),
     1
   );
 
@@ -749,21 +792,21 @@ function ActivityGraph({
         <div className="flex gap-4">
           <MiniStatistic
             label="Recent streak"
-            value={`${data.statistics.recentActivityStreak} days`}
+            value={`${statistics.recentActivityStreak} days`}
           />
 
           <MiniStatistic
             label="Push events"
             value={String(
-              data.statistics.recentPushEvents
+              statistics.recentPushEvents
             )}
           />
         </div>
       </div>
 
-      {data.activityByDay.length > 0 ? (
+      {activityByDay.length > 0 ? (
         <div className="mt-8 flex h-44 items-end gap-2">
-          {data.activityByDay.map((day) => {
+          {activityByDay.map((day) => {
             const height =
               Math.max(
                 (day.count / maximumCount) * 100,
@@ -819,18 +862,17 @@ function ActivityGraph({
           </div>
 
           <p className="mt-3 font-display text-lg font-semibold">
-            {data.statistics.mostActiveDay
+            {statistics.mostActiveDay
               ? formatLongDate(
-                  data.statistics.mostActiveDay.date
+                  statistics.mostActiveDay.date
                 )
               : "No recent data"}
           </p>
 
-          {data.statistics.mostActiveDay && (
+          {statistics.mostActiveDay && (
             <p className="mt-1 text-sm text-muted-foreground">
               {
-                data.statistics.mostActiveDay
-                  .count
+                statistics.mostActiveDay.count
               }{" "}
               public events
             </p>
@@ -848,8 +890,7 @@ function ActivityGraph({
 
           <p className="mt-3 font-display text-lg font-semibold">
             {
-              data.statistics
-                .originalRepositories
+              statistics.originalRepositories
             }
           </p>
 
@@ -867,6 +908,10 @@ function RecentActivityList({
 }: {
   activity: GitHubActivity[];
 }) {
+  const safeActivity = Array.isArray(activity)
+    ? activity
+    : [];
+
   return (
     <motion.div
       initial={{
@@ -892,8 +937,8 @@ function RecentActivityList({
       </p>
 
       <div className="mt-6 space-y-3">
-        {activity.length > 0 ? (
-          activity.map((item) => (
+        {safeActivity.length > 0 ? (
+          safeActivity.map((item) => (
             <div
               key={item.id}
               className="rounded-2xl border border-white/10 bg-white/5 p-4"
@@ -1065,6 +1110,99 @@ function ProjectsBackground() {
   );
 }
 
+function normalizeGitHubData(
+  input: Partial<GitHubData>
+): GitHubData {
+  const profile = input.profile;
+  const statistics = input.statistics;
+
+  const activityByDay = Array.isArray(
+    input.activityByDay
+  )
+    ? input.activityByDay.filter(
+        (day): day is ActivityDay =>
+          Boolean(
+            day &&
+              typeof day.date === "string" &&
+              typeof day.count === "number"
+          )
+      )
+    : [];
+
+  const recentActivity = Array.isArray(
+    input.recentActivity
+  )
+    ? input.recentActivity.filter(
+        (item): item is GitHubActivity =>
+          Boolean(
+            item &&
+              typeof item.id === "string" &&
+              typeof item.type === "string" &&
+              typeof item.repository === "string" &&
+              typeof item.createdAt === "string"
+          )
+      )
+    : [];
+
+  const popularRepositories = Array.isArray(
+    input.popularRepositories
+  )
+    ? input.popularRepositories.filter(
+        (repository): repository is PopularRepository =>
+          Boolean(
+            repository &&
+              typeof repository.id === "number" &&
+              typeof repository.name === "string" &&
+              typeof repository.url === "string"
+          )
+      )
+    : [];
+
+  return {
+    profile: {
+      username: profile?.username ?? "priyanshu-git2777",
+      name: profile?.name ?? "Priyanshu Jaggi",
+      avatarUrl:
+        profile?.avatarUrl ??
+        "https://github.com/priyanshu-git2777.png",
+      profileUrl:
+        profile?.profileUrl ??
+        "https://github.com/priyanshu-git2777",
+      bio: profile?.bio ?? null,
+      publicRepositories:
+        profile?.publicRepositories ?? 0,
+      followers: profile?.followers ?? 0,
+      following: profile?.following ?? 0,
+    },
+    statistics: {
+      originalRepositories:
+        statistics?.originalRepositories ?? 0,
+      totalStars: statistics?.totalStars ?? 0,
+      recentPublicEvents:
+        statistics?.recentPublicEvents ?? 0,
+      recentPushEvents:
+        statistics?.recentPushEvents ?? 0,
+      recentActivityStreak:
+        statistics?.recentActivityStreak ?? 0,
+      mostActiveDay:
+        statistics?.mostActiveDay &&
+        typeof statistics.mostActiveDay.date ===
+          "string" &&
+        typeof statistics.mostActiveDay.count ===
+          "number"
+          ? statistics.mostActiveDay
+          : null,
+    },
+    activityByDay,
+    recentActivity,
+    popularRepositories,
+    generatedAt:
+      typeof input.generatedAt === "string"
+        ? input.generatedAt
+        : new Date().toISOString(),
+  };
+}
+
 function formatCategory(
   category: ProjectCategory
 ): string {
@@ -1081,22 +1219,39 @@ function formatCategory(
 }
 
 function formatShortDate(date: string): string {
+  const parsedDate = new Date(`${date}T00:00:00Z`);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "—";
+  }
+
   return new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     month: "short",
-  }).format(new Date(`${date}T00:00:00Z`));
+  }).format(parsedDate);
 }
 
 function formatLongDate(date: string): string {
+  const parsedDate = new Date(`${date}T00:00:00Z`);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "No recent data";
+  }
+
   return new Intl.DateTimeFormat("en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",
-  }).format(new Date(`${date}T00:00:00Z`));
+  }).format(parsedDate);
 }
 
 function formatRelativeTime(date: string): string {
   const dateValue = new Date(date).getTime();
+
+  if (Number.isNaN(dateValue)) {
+    return "recently";
+  }
+
   const currentValue = Date.now();
 
   const differenceInSeconds = Math.round(

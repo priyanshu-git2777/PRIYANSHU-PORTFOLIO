@@ -1,4 +1,5 @@
 "use client";
+import styles from "./skill-globe.module.css";
 
 import { useState } from "react";
 import {
@@ -98,6 +99,91 @@ const categories: CategoryItem[] = [
     description:
       "Development tools that support my coding and project workflow.",
     icon: Wrench,
+  },
+];
+
+const skillCategories = [
+  {
+    title: "Frontend",
+    skills: [
+      "HTML5",
+      "CSS3",
+      "JavaScript",
+      "TypeScript",
+      "React",
+      "Next.js",
+      "Tailwind CSS",
+      "Responsive Design",
+    ],
+  },
+  {
+    title: "Backend",
+    skills: [
+      "Node.js",
+      "Express.js",
+      "REST APIs",
+      "API Development",
+      "JWT Authentication",
+      "CRUD Operations",
+    ],
+  },
+  {
+    title: "Database",
+    skills: [
+      "MongoDB",
+      "Mongoose",
+      "DBMS",
+      "Database Design",
+    ],
+  },
+  {
+    title: "Programming",
+    skills: [
+      "Java",
+      "JavaScript",
+      "TypeScript",
+      "Python",
+      "Data Structures",
+      "Algorithms",
+    ],
+  },
+  {
+    title: "Tools and Deployment",
+    skills: [
+      "Git",
+      "GitHub",
+      "Postman",
+      "Vercel",
+      "VS Code",
+      "Docker",
+    ],
+  },
+  {
+    title: "Cloud and DevOps",
+    skills: [
+      "Cloud Computing",
+      "AWS",
+      "Docker",
+      "Kubernetes",
+    ],
+  },
+  {
+    title: "Computer Science",
+    skills: [
+      "Operating Systems",
+      "Computer Networks",
+      "DBMS",
+      "Object-Oriented Programming",
+    ],
+  },
+  {
+    title: "AI and APIs",
+    skills: [
+      "Gemini API",
+      "AI API Integration",
+      "Prompt Engineering",
+      "REST API Integration",
+    ],
   },
 ];
 
