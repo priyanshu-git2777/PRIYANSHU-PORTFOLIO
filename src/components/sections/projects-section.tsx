@@ -295,9 +295,10 @@ function ProjectCard({
   project: Project;
   index: number;
 }) {
-  const hasLiveUrl = project.liveUrl.trim().length > 0;
-  const hasGitHubUrl =
-    project.githubUrl.trim().length > 0;
+  const liveUrl = project.liveUrl ?? "";
+  const githubUrl = project.githubUrl ?? "";
+  const hasLiveUrl = liveUrl.trim().length > 0;
+  const hasGitHubUrl = githubUrl.trim().length > 0;
 
   return (
     <motion.article
@@ -356,7 +357,7 @@ function ProjectCard({
         <div className="absolute inset-x-0 bottom-0 flex translate-y-full items-center justify-center gap-3 bg-black/50 p-5 backdrop-blur-xl transition-transform duration-300 group-hover:translate-y-0">
           {hasGitHubUrl && (
             <a
-              href={project.githubUrl}
+              href={githubUrl}
               target="_blank"
               rel="noreferrer"
               aria-label={`Open ${project.title} on GitHub`}
@@ -368,7 +369,7 @@ function ProjectCard({
 
           {hasLiveUrl && (
             <a
-              href={project.liveUrl}
+              href={liveUrl}
               target="_blank"
               rel="noreferrer"
               aria-label={`Open live demo of ${project.title}`}
@@ -400,7 +401,7 @@ function ProjectCard({
         </p>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          {project.technologies.map((technology) => (
+          {(project.technologies ?? []).map((technology) => (
             <span
               key={technology}
               className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-foreground/75"
@@ -413,7 +414,7 @@ function ProjectCard({
         <div className="mt-auto flex flex-wrap gap-3 pt-7">
           {hasGitHubUrl ? (
             <a
-              href={project.githubUrl}
+              href={githubUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-foreground transition-all hover:-translate-y-0.5 hover:bg-white/10"
@@ -429,7 +430,7 @@ function ProjectCard({
 
           {hasLiveUrl ? (
             <a
-              href={project.liveUrl}
+              href={liveUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-xl bg-signature-gradient px-4 py-2.5 text-sm font-medium text-white shadow-glow transition-all hover:-translate-y-0.5 hover:opacity-90"
@@ -613,25 +614,27 @@ function GitHubDashboard({
 }: {
   data: GitHubData;
 }) {
+  const safeData = normalizeGitHubData(data ?? {});
+
   const statistics = [
     {
       label: "Public repositories",
-      value: data.profile?.publicRepositories ?? 0,
+      value: safeData.profile?.publicRepositories ?? 0,
       icon: FaGitAlt,
     },
     {
       label: "Total public stars",
-      value: data?.statistics?.totalStars ?? 0,
+      value: safeData.statistics?.totalStars ?? 0,
       icon: Star,
     },
     {
       label: "Followers",
-      value: data.profile?.followers ?? 0,
+      value: safeData.profile?.followers ?? 0,
       icon: Users,
     },
     {
       label: "Recent public events",
-      value: data?.statistics?.recentPublicEvents ?? 0,
+      value: safeData.statistics?.recentPublicEvents ?? 0,
       icon: Activity,
     },
   ];
@@ -656,33 +659,34 @@ function GitHubDashboard({
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-5">
            <Image
-  src={data.profile.avatarUrl}
-  alt={`${data.profile.username} GitHub avatar`}
+  src={safeData.profile.avatarUrl}
+  alt={`${safeData.profile.username} GitHub avatar`}
   width={80}
   height={80}
   className="size-16 rounded-2xl border border-white/10 object-cover sm:size-20"
+  unoptimized
 />
 
             <div>
               <p className="font-display text-2xl font-bold">
-                {data.profile.name ??
-                  data.profile.username}
+                {safeData.profile.name ??
+                  safeData.profile.username}
               </p>
 
               <p className="mt-1 text-sm text-cyan-300">
-                @{data.profile.username}
+                @{safeData.profile.username}
               </p>
 
-              {data.profile.bio && (
+              {safeData.profile.bio && (
                 <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-                  {data.profile.bio}
+                  {safeData.profile.bio}
                 </p>
               )}
             </div>
           </div>
 
           <a
-            href={data.profile.profileUrl}
+            href={safeData.profile.profileUrl}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-signature-gradient px-5 py-3 text-sm font-semibold text-white shadow-glow transition-all hover:-translate-y-0.5 hover:opacity-90"
@@ -735,13 +739,13 @@ function GitHubDashboard({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <ActivityGraph data={data} />
+        <ActivityGraph data={safeData} />
         <RecentActivityList
-          activity={data.recentActivity}
+          activity={safeData.recentActivity}
         />
       </div>
 
-      <GitHubImportantNote generatedAt={data.generatedAt} />
+      <GitHubImportantNote generatedAt={safeData.generatedAt} />
     </div>
   );
 }
@@ -751,11 +755,9 @@ function ActivityGraph({
 }: {
   data: GitHubData;
 }) {
-  const activityByDay = Array.isArray(data.activityByDay)
-    ? data.activityByDay
-    : [];
-
-  const statistics = data.statistics;
+  const safeData = normalizeGitHubData(data ?? {});
+  const activityByDay = safeData.activityByDay;
+  const statistics = safeData.statistics;
 
   const maximumCount = Math.max(
     ...activityByDay.map((day) => day.count),
