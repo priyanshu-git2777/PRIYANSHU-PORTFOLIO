@@ -1,5 +1,5 @@
 "use client";
-
+import { FlowingSkillsBackground } from "@/components/effects/flowing-skills-background";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -116,6 +116,7 @@ export function HeroSection() {
               </span>
 
               <div className="relative overflow-hidden">
+                <FlowingSkillsBackground />
                 <AnimatePresence mode="wait">
                   <motion.span
                     key={roles[activeRoleIndex]}
